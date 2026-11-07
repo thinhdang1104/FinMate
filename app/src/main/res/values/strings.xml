@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FinMate</string>
+
+    <string name="nav_home">Tổng quan</string>
+    <string name="nav_transactions">Sổ GD</string>
+    <string name="nav_add">Thêm</string>
+    <string name="nav_statistics">Thống kê</string>
+    <string name="nav_settings">Cài đặt</string>
+
+    <string name="expense">Chi tiêu</string>
+    <string name="income">Thu nhập</string>
+    <string name="prev_month">Tháng trước</string>
+    <string name="next_month">Tháng sau</string>
+</resources>

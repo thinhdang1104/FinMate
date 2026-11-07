@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Màu thương hiệu (Teal) -->
+    <color name="primary">#0F766E</color>
+    <color name="primary_dark">#115E59</color>
+    <color name="primary_container">#CCFBF1</color>
+
+    <!-- Nền và bề mặt -->
+    <color name="background">#F5F7FA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F1F5F9</color>
+    <color name="outline">#E2E8F0</color>
+
+    <!-- Văn bản -->
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="text_faint">#94A3B8</color>
+    <color name="on_primary_muted">#D9FFFFFF</color>
+
+    <!-- Ngữ nghĩa -->
+    <color name="income">#16A34A</color>
+    <color name="income_bg">#DCFCE7</color>
+    <color name="expense">#DC2626</color>
+    <color name="expense_bg">#FEE2E2</color>
+    <color name="warning">#D97706</color>
+
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>
