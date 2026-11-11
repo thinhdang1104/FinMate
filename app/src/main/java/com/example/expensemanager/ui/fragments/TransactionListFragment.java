@@ -153,7 +153,7 @@ public class TransactionListFragment extends Fragment {
                 Transaction removed = adapter.getItem(pos);
                 dao.delete(removed.getId());
                 load();
-                Snackbar.make(rv, "Đã xóa " + CurrencyUtils.format(removed.getAmount()), Snackbar.LENGTH_LONG)
+                Snackbar.make(requireView(), "Đã xóa " + CurrencyUtils.format(removed.getAmount()), Snackbar.LENGTH_LONG)
                         .setAction("Hoàn tác", x -> {
                             dao.insert(removed);
                             load();

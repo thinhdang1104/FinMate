@@ -134,6 +134,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     + " (" + COL_BG_USER_ID + ", " + COL_BG_MONTH_YEAR + ", " + COL_BG_LIMIT + ") "
                     + "SELECT 1, " + COL_BG_MONTH_YEAR + ", " + COL_BG_LIMIT + " FROM budgets_old");
             db.execSQL("DROP TABLE IF EXISTS budgets_old");
+            db.execSQL("DROP INDEX IF EXISTS idx_transactions_date");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON "
+                    + TABLE_TRANSACTIONS + "(" + COL_TR_USER_ID + ", " + COL_TR_DATE + ")");
         }
     }
 

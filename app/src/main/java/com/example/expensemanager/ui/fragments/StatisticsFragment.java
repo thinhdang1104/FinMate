@@ -150,6 +150,7 @@ public class StatisticsFragment extends Fragment {
 
         statAdapter.setData(stats);
         tvStatsEmpty.setVisibility(stats.isEmpty() ? View.VISIBLE : View.GONE);
+        pieChart.setVisibility(stats.isEmpty() ? View.GONE : View.VISIBLE);
 
         if (stats.isEmpty()) {
             pieChart.clear();

@@ -28,14 +28,19 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Kiểm tra phiên đăng nhập đã lưu
+        userDAO = new UserDAO(this);
+
+        // Kiểm tra phiên đăng nhập đã lưu và xác nhận tài khoản còn tồn tại trong SQLite
         if (AppPrefs.isLoggedIn(this)) {
-            goToMain();
-            return;
+            User savedUser = userDAO.getById(AppPrefs.getUserId(this));
+            if (savedUser != null) {
+                goToMain();
+                return;
+            }
+            AppPrefs.clearUserSession(this);
         }
 
         setContentView(R.layout.activity_login);
-        userDAO = new UserDAO(this);
 
         tilEmail = findViewById(R.id.til_email);
         tilPassword = findViewById(R.id.til_password);

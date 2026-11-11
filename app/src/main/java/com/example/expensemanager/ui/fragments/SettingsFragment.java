@@ -235,6 +235,11 @@ public class SettingsFragment extends Fragment {
     }
 
     private void exportCsv() {
+        if (new TransactionDAO(requireContext()).getAll().isEmpty()) {
+            Toast.makeText(requireContext(), "Chưa có giao dịch nào để xuất file CSV",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
         try {
             File file = CsvExporter.export(requireContext());
             Uri uri = FileProvider.getUriForFile(requireContext(),
