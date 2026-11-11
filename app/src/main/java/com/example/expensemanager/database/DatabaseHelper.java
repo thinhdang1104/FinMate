@@ -8,13 +8,21 @@ import android.database.sqlite.SQLiteOpenHelper;
 import com.example.expensemanager.model.Category;
 
 /**
- * Lớp quản lý cơ sở dữ liệu SQLite: tạo bảng và dữ liệu danh mục mặc định.
- * Dùng Singleton để toàn ứng dụng chỉ mở một kết nối.
+ * Lớp quản lý cơ sở dữ liệu SQLite: tạo bảng users, categories, transactions, budgets
+ * và dữ liệu mặc định.
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     public static final String DB_NAME = "ExpenseManager.db";
-    public static final int DB_VERSION = 1;
+    public static final int DB_VERSION = 2;
+
+    // Bảng users
+    public static final String TABLE_USERS = "users";
+    public static final String COL_USER_ID = "id";
+    public static final String COL_USER_NAME = "full_name";
+    public static final String COL_USER_EMAIL = "email";
+    public static final String COL_USER_PASSWORD = "password_hash";
+    public static final String COL_USER_CREATED_AT = "created_at";
 
     // Bảng categories
     public static final String TABLE_CATEGORIES = "categories";
@@ -27,6 +35,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // Bảng transactions
     public static final String TABLE_TRANSACTIONS = "transactions";
     public static final String COL_TR_ID = "id";
+    public static final String COL_TR_USER_ID = "user_id";
     public static final String COL_TR_AMOUNT = "amount";
     public static final String COL_TR_TYPE = "type";
     public static final String COL_TR_CATEGORY_ID = "category_id";
@@ -36,8 +45,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     // Bảng budgets
     public static final String TABLE_BUDGETS = "budgets";
     public static final String COL_BG_ID = "id";
+    public static final String COL_BG_USER_ID = "user_id";
     public static final String COL_BG_MONTH_YEAR = "month_year";
     public static final String COL_BG_LIMIT = "limit_amount";
+
+    private static final String SQL_CREATE_USERS =
+            "CREATE TABLE " + TABLE_USERS + " ("
+                    + COL_USER_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + COL_USER_NAME + " TEXT NOT NULL, "
+                    + COL_USER_EMAIL + " TEXT UNIQUE NOT NULL, "
+                    + COL_USER_PASSWORD + " TEXT NOT NULL, "
+                    + COL_USER_CREATED_AT + " INTEGER NOT NULL)";
 
     private static final String SQL_CREATE_CATEGORIES =
             "CREATE TABLE " + TABLE_CATEGORIES + " ("
@@ -50,6 +68,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_CREATE_TRANSACTIONS =
             "CREATE TABLE " + TABLE_TRANSACTIONS + " ("
                     + COL_TR_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    + COL_TR_USER_ID + " INTEGER NOT NULL DEFAULT 1, "
                     + COL_TR_AMOUNT + " REAL NOT NULL, "
                     + COL_TR_TYPE + " INTEGER NOT NULL, "
                     + COL_TR_CATEGORY_ID + " INTEGER NOT NULL, "
@@ -61,8 +80,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String SQL_CREATE_BUDGETS =
             "CREATE TABLE " + TABLE_BUDGETS + " ("
                     + COL_BG_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                    + COL_BG_MONTH_YEAR + " TEXT UNIQUE NOT NULL, "
-                    + COL_BG_LIMIT + " REAL NOT NULL)";
+                    + COL_BG_USER_ID + " INTEGER NOT NULL DEFAULT 1, "
+                    + COL_BG_MONTH_YEAR + " TEXT NOT NULL, "
+                    + COL_BG_LIMIT + " REAL NOT NULL, "
+                    + "UNIQUE(" + COL_BG_USER_ID + ", " + COL_BG_MONTH_YEAR + "))";
 
     private static DatabaseHelper instance;
 
@@ -85,19 +106,45 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        db.execSQL(SQL_CREATE_USERS);
         db.execSQL(SQL_CREATE_CATEGORIES);
         db.execSQL(SQL_CREATE_TRANSACTIONS);
         db.execSQL(SQL_CREATE_BUDGETS);
-        db.execSQL("CREATE INDEX idx_transactions_date ON " + TABLE_TRANSACTIONS + "(" + COL_TR_DATE + ")");
+        db.execSQL("CREATE INDEX idx_transactions_user_date ON "
+                + TABLE_TRANSACTIONS + "(" + COL_TR_USER_ID + ", " + COL_TR_DATE + ")");
+        seedDefaultUser(db);
         seedDefaultCategories(db);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_TRANSACTIONS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_BUDGETS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_CATEGORIES);
-        onCreate(db);
+        if (oldVersion < 2) {
+            // Nâng cấp từ v1 lên v2: thêm bảng users và cột user_id mà không làm mất dữ liệu cũ
+            db.execSQL(SQL_CREATE_USERS);
+            seedDefaultUser(db);
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_TRANSACTIONS
+                        + " ADD COLUMN " + COL_TR_USER_ID + " INTEGER NOT NULL DEFAULT 1");
+            } catch (Exception ignored) {
+            }
+            // Tạo lại bảng budgets có khóa UNIQUE(user_id, month_year)
+            db.execSQL("ALTER TABLE " + TABLE_BUDGETS + " RENAME TO budgets_old");
+            db.execSQL(SQL_CREATE_BUDGETS);
+            db.execSQL("INSERT OR IGNORE INTO " + TABLE_BUDGETS
+                    + " (" + COL_BG_USER_ID + ", " + COL_BG_MONTH_YEAR + ", " + COL_BG_LIMIT + ") "
+                    + "SELECT 1, " + COL_BG_MONTH_YEAR + ", " + COL_BG_LIMIT + " FROM budgets_old");
+            db.execSQL("DROP TABLE IF EXISTS budgets_old");
+        }
+    }
+
+    /** Tạo sẵn tài khoản mẫu để sinh viên / giảng viên test nhanh khi demo. */
+    private void seedDefaultUser(SQLiteDatabase db) {
+        ContentValues v = new ContentValues();
+        v.put(COL_USER_NAME, "Sinh viên IT");
+        v.put(COL_USER_EMAIL, "sv@finmate.vn");
+        v.put(COL_USER_PASSWORD, UserDAO.hashPassword("123456"));
+        v.put(COL_USER_CREATED_AT, System.currentTimeMillis());
+        db.insertWithOnConflict(TABLE_USERS, null, v, SQLiteDatabase.CONFLICT_IGNORE);
     }
 
     /** Danh mục mặc định khi cài đặt ứng dụng lần đầu. */

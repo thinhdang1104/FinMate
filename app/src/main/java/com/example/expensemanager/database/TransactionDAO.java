@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 
 import com.example.expensemanager.model.CategoryStat;
 import com.example.expensemanager.model.Transaction;
+import com.example.expensemanager.utils.AppPrefs;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,8 @@ import java.util.List;
 import static com.example.expensemanager.database.DatabaseHelper.*;
 
 /**
- * Data Access Object cho bảng transactions: CRUD, tìm kiếm, lọc và các truy vấn thống kê.
+ * Data Access Object cho bảng transactions: CRUD, tìm kiếm, lọc và các truy vấn thống kê
+ * theo tài khoản đang đăng nhập (user_id).
  */
 public class TransactionDAO {
 
@@ -24,10 +26,16 @@ public class TransactionDAO {
                     + "FROM " + TABLE_TRANSACTIONS + " t "
                     + "LEFT JOIN " + TABLE_CATEGORIES + " c ON t.category_id = c.id ";
 
+    private final Context context;
     private final DatabaseHelper dbHelper;
 
     public TransactionDAO(Context context) {
-        dbHelper = DatabaseHelper.getInstance(context);
+        this.context = context.getApplicationContext();
+        this.dbHelper = DatabaseHelper.getInstance(this.context);
+    }
+
+    private int currentUserId() {
+        return Math.max(1, AppPrefs.getUserId(context));
     }
 
     // ------------------------- CRUD -------------------------
@@ -52,31 +60,38 @@ public class TransactionDAO {
 
     public int update(Transaction t) {
         return dbHelper.getWritableDatabase().update(TABLE_TRANSACTIONS, toValues(t),
-                COL_TR_ID + " = ?", new String[]{String.valueOf(t.getId())});
+                COL_TR_ID + " = ? AND " + COL_TR_USER_ID + " = ?",
+                new String[]{String.valueOf(t.getId()), String.valueOf(currentUserId())});
     }
 
     public int delete(int id) {
         return dbHelper.getWritableDatabase().delete(TABLE_TRANSACTIONS,
-                COL_TR_ID + " = ?", new String[]{String.valueOf(id)});
+                COL_TR_ID + " = ? AND " + COL_TR_USER_ID + " = ?",
+                new String[]{String.valueOf(id), String.valueOf(currentUserId())});
     }
 
     public void deleteAll() {
-        dbHelper.getWritableDatabase().delete(TABLE_TRANSACTIONS, null, null);
+        dbHelper.getWritableDatabase().delete(TABLE_TRANSACTIONS,
+                COL_TR_USER_ID + " = ?", new String[]{String.valueOf(currentUserId())});
     }
 
     public Transaction getById(int id) {
-        List<Transaction> list = rawList(BASE_SELECT + "WHERE t.id = ?", new String[]{String.valueOf(id)});
+        List<Transaction> list = rawList(
+                BASE_SELECT + "WHERE t.id = ? AND t.user_id = ?",
+                new String[]{String.valueOf(id), String.valueOf(currentUserId())});
         return list.isEmpty() ? null : list.get(0);
     }
 
     // ------------------------- Truy vấn danh sách -------------------------
 
     public List<Transaction> getAll() {
-        return rawList(BASE_SELECT + "ORDER BY t.date DESC, t.id DESC", null);
+        return rawList(BASE_SELECT + "WHERE t.user_id = ? ORDER BY t.date DESC, t.id DESC",
+                new String[]{String.valueOf(currentUserId())});
     }
 
     public List<Transaction> getRecent(int limit) {
-        return rawList(BASE_SELECT + "ORDER BY t.date DESC, t.id DESC LIMIT " + limit, null);
+        return rawList(BASE_SELECT + "WHERE t.user_id = ? ORDER BY t.date DESC, t.id DESC LIMIT " + limit,
+                new String[]{String.valueOf(currentUserId())});
     }
 
     /**
@@ -86,8 +101,10 @@ public class TransactionDAO {
      * @param keyword tìm theo ghi chú hoặc tên danh mục (có thể rỗng)
      */
     public List<Transaction> getByRange(long start, long end, int type, String keyword) {
-        StringBuilder sql = new StringBuilder(BASE_SELECT).append("WHERE t.date BETWEEN ? AND ? ");
+        StringBuilder sql = new StringBuilder(BASE_SELECT)
+                .append("WHERE t.user_id = ? AND t.date BETWEEN ? AND ? ");
         List<String> args = new ArrayList<>();
+        args.add(String.valueOf(currentUserId()));
         args.add(String.valueOf(start));
         args.add(String.valueOf(end));
         if (type >= 0) {
@@ -109,14 +126,20 @@ public class TransactionDAO {
     /** Tổng tiền theo loại trong khoảng thời gian. */
     public double sumByRange(long start, long end, int type) {
         return singleDouble("SELECT COALESCE(SUM(amount), 0) FROM " + TABLE_TRANSACTIONS
-                        + " WHERE type = ? AND date BETWEEN ? AND ?",
-                new String[]{String.valueOf(type), String.valueOf(start), String.valueOf(end)});
+                        + " WHERE user_id = ? AND type = ? AND date BETWEEN ? AND ?",
+                new String[]{
+                        String.valueOf(currentUserId()),
+                        String.valueOf(type),
+                        String.valueOf(start),
+                        String.valueOf(end)
+                });
     }
 
-    /** Số dư hiện tại = tổng thu - tổng chi (toàn bộ thời gian). */
+    /** Số dư hiện tại = tổng thu - tổng chi (toàn bộ thời gian của người dùng hiện tại). */
     public double getTotalBalance() {
         return singleDouble("SELECT COALESCE(SUM(CASE WHEN type = 1 THEN amount ELSE -amount END), 0) FROM "
-                + TABLE_TRANSACTIONS, null);
+                        + TABLE_TRANSACTIONS + " WHERE user_id = ?",
+                new String[]{String.valueOf(currentUserId())});
     }
 
     /** Tổng tiền theo từng danh mục, sắp xếp giảm dần, kèm phần trăm. */
@@ -124,11 +147,16 @@ public class TransactionDAO {
         List<CategoryStat> list = new ArrayList<>();
         String sql = "SELECT c.id, c.name, c.icon, c.color, SUM(t.amount) AS total "
                 + "FROM " + TABLE_TRANSACTIONS + " t JOIN " + TABLE_CATEGORIES + " c ON t.category_id = c.id "
-                + "WHERE t.type = ? AND t.date BETWEEN ? AND ? "
+                + "WHERE t.user_id = ? AND t.type = ? AND t.date BETWEEN ? AND ? "
                 + "GROUP BY c.id ORDER BY total DESC";
         double sum = 0;
         try (Cursor c = dbHelper.getReadableDatabase().rawQuery(sql,
-                new String[]{String.valueOf(type), String.valueOf(start), String.valueOf(end)})) {
+                new String[]{
+                        String.valueOf(currentUserId()),
+                        String.valueOf(type),
+                        String.valueOf(start),
+                        String.valueOf(end)
+                })) {
             while (c.moveToNext()) {
                 CategoryStat stat = new CategoryStat(c.getInt(0), c.getString(1),
                         c.getString(2), c.getString(3), c.getDouble(4));
@@ -177,6 +205,7 @@ public class TransactionDAO {
 
     private ContentValues toValues(Transaction t) {
         ContentValues v = new ContentValues();
+        v.put(COL_TR_USER_ID, currentUserId());
         v.put(COL_TR_AMOUNT, t.getAmount());
         v.put(COL_TR_TYPE, t.getType());
         v.put(COL_TR_CATEGORY_ID, t.getCategoryId());

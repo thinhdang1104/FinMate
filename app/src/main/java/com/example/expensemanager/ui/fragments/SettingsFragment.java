@@ -15,13 +15,16 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import com.example.expensemanager.R;
 import com.example.expensemanager.database.BudgetDAO;
 import com.example.expensemanager.database.TransactionDAO;
+import com.example.expensemanager.database.UserDAO;
 import com.example.expensemanager.ui.CategoryManagerActivity;
+import com.example.expensemanager.ui.LoginActivity;
 import com.example.expensemanager.utils.AppPrefs;
 import com.example.expensemanager.utils.CsvExporter;
 import com.example.expensemanager.utils.CurrencyUtils;
@@ -31,6 +34,8 @@ import com.example.expensemanager.utils.NotificationHelper;
 import com.example.expensemanager.utils.SampleDataGenerator;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.materialswitch.MaterialSwitch;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.timepicker.MaterialTimePicker;
 import com.google.android.material.timepicker.TimeFormat;
 
@@ -38,11 +43,11 @@ import java.io.File;
 import java.util.Calendar;
 
 /**
- * Tab Cài đặt: ngân sách, danh mục, nhắc nhở, xuất CSV, dữ liệu mẫu, xóa dữ liệu.
+ * Tab Cài đặt: thông tin tài khoản, đổi mật khẩu, đăng xuất, ngân sách, danh mục, nhắc nhở, xuất CSV.
  */
 public class SettingsFragment extends Fragment {
 
-    private TextView tvBudgetValue, tvReminderTime;
+    private TextView tvUserName, tvUserEmail, tvBudgetValue, tvReminderTime;
     private MaterialSwitch switchReminder;
     private View rowReminderTime;
     private boolean ignoreSwitch = false;
@@ -67,10 +72,15 @@ public class SettingsFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
+        tvUserName = v.findViewById(R.id.tv_user_name);
+        tvUserEmail = v.findViewById(R.id.tv_user_email);
         tvBudgetValue = v.findViewById(R.id.tv_budget_value);
         tvReminderTime = v.findViewById(R.id.tv_reminder_time);
         switchReminder = v.findViewById(R.id.switch_reminder);
         rowReminderTime = v.findViewById(R.id.row_reminder_time);
+
+        v.findViewById(R.id.row_change_password).setOnClickListener(x -> showChangePasswordDialog());
+        v.findViewById(R.id.row_logout).setOnClickListener(x -> confirmLogout());
 
         v.findViewById(R.id.row_budget).setOnClickListener(x -> {
             Calendar now = Calendar.getInstance();
@@ -107,12 +117,79 @@ public class SettingsFragment extends Fragment {
     }
 
     private void refresh() {
+        tvUserName.setText(AppPrefs.getUserName(requireContext()));
+        tvUserEmail.setText(AppPrefs.getUserEmail(requireContext()));
+
         double limit = new BudgetDAO(requireContext()).getLimit(DateUtils.monthKey(Calendar.getInstance()));
         tvBudgetValue.setText(limit > 0 ? CurrencyUtils.format(limit) : "Chưa thiết lập");
 
         boolean enabled = AppPrefs.isReminderEnabled(requireContext());
         setSwitchSilently(enabled);
         updateReminderTimeLabel();
+    }
+
+    private void showChangePasswordDialog() {
+        View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_change_password, null);
+        TextInputLayout tilOld = view.findViewById(R.id.til_old_password);
+        TextInputLayout tilNew = view.findViewById(R.id.til_new_password);
+        TextInputLayout tilConfirm = view.findViewById(R.id.til_confirm_password);
+        TextInputEditText etOld = view.findViewById(R.id.et_old_password);
+        TextInputEditText etNew = view.findViewById(R.id.et_new_password);
+        TextInputEditText etConfirm = view.findViewById(R.id.et_confirm_password);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Đổi mật khẩu")
+                .setView(view)
+                .setNegativeButton("Hủy", null)
+                .setPositiveButton("Lưu", null)
+                .create();
+
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(btn -> {
+            String oldPass = etOld.getText() == null ? "" : etOld.getText().toString().trim();
+            String newPass = etNew.getText() == null ? "" : etNew.getText().toString().trim();
+            String confirm = etConfirm.getText() == null ? "" : etConfirm.getText().toString().trim();
+
+            tilOld.setError(null);
+            tilNew.setError(null);
+            tilConfirm.setError(null);
+
+            if (oldPass.isEmpty()) {
+                tilOld.setError("Vui lòng nhập mật khẩu hiện tại");
+                return;
+            }
+            if (newPass.length() < 6) {
+                tilNew.setError("Mật khẩu mới phải có ít nhất 6 ký tự");
+                return;
+            }
+            if (!newPass.equals(confirm)) {
+                tilConfirm.setError("Mật khẩu xác nhận không khớp");
+                return;
+            }
+
+            UserDAO userDAO = new UserDAO(requireContext());
+            boolean updated = userDAO.changePassword(AppPrefs.getUserId(requireContext()), oldPass, newPass);
+            if (!updated) {
+                tilOld.setError("Mật khẩu hiện tại không đúng");
+                return;
+            }
+            Toast.makeText(requireContext(), "Đổi mật khẩu thành công!", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        }));
+        dialog.show();
+    }
+
+    private void confirmLogout() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Đăng xuất tài khoản?")
+                .setMessage("Bạn sẽ quay về màn hình đăng nhập. Dữ liệu thu chi của bạn vẫn được lưu an toàn.")
+                .setNegativeButton("Hủy", null)
+                .setPositiveButton("Đăng xuất", (d, w) -> {
+                    AppPrefs.clearUserSession(requireContext());
+                    Intent intent = new Intent(requireContext(), LoginActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                })
+                .show();
     }
 
     private void setSwitchSilently(boolean checked) {
@@ -191,8 +268,8 @@ public class SettingsFragment extends Fragment {
 
     private void confirmReset() {
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Xóa toàn bộ dữ liệu?")
-                .setMessage("Tất cả giao dịch và ngân sách sẽ bị xóa vĩnh viễn. Danh mục được giữ lại.")
+                .setTitle("Xóa dữ liệu của tài khoản?")
+                .setMessage("Tất cả giao dịch và ngân sách của tài khoản này sẽ bị xóa vĩnh viễn.")
                 .setNegativeButton("Hủy", null)
                 .setPositiveButton("Xóa hết", (d, w) -> {
                     new TransactionDAO(requireContext()).deleteAll();

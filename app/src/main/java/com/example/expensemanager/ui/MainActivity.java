@@ -11,6 +11,7 @@ import com.example.expensemanager.ui.fragments.HomeFragment;
 import com.example.expensemanager.ui.fragments.SettingsFragment;
 import com.example.expensemanager.ui.fragments.StatisticsFragment;
 import com.example.expensemanager.ui.fragments.TransactionListFragment;
+import com.example.expensemanager.utils.AppPrefs;
 import com.example.expensemanager.utils.NotificationHelper;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -24,6 +25,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Chuyển về màn hình đăng nhập nếu chưa có phiên hợp lệ
+        if (!AppPrefs.isLoggedIn(this)) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_main);
 
         NotificationHelper.createChannels(this);
@@ -32,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_add) {
-                // Nút "Thêm" ở giữa: mở màn hình thêm giao dịch, không đổi tab
                 startActivity(new Intent(this, AddEditTransactionActivity.class));
                 return false;
             }

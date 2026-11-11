@@ -21,6 +21,7 @@ import com.example.expensemanager.database.TransactionDAO;
 import com.example.expensemanager.model.Transaction;
 import com.example.expensemanager.ui.AddEditTransactionActivity;
 import com.example.expensemanager.ui.MainActivity;
+import com.example.expensemanager.utils.AppPrefs;
 import com.example.expensemanager.utils.CurrencyUtils;
 import com.example.expensemanager.utils.DateUtils;
 import com.example.expensemanager.utils.DialogUtils;
@@ -36,7 +37,7 @@ import java.util.Locale;
  */
 public class HomeFragment extends Fragment {
 
-    private TextView tvMonth, tvBalance, tvIncome, tvExpense;
+    private TextView tvGreeting, tvMonth, tvBalance, tvIncome, tvExpense;
     private TextView tvBudgetTitle, tvBudgetRemain, tvBudgetSpent, tvBudgetPercent, tvBudgetEmpty;
     private View layoutBudgetContent, layoutEmpty;
     private LinearProgressIndicator progressBudget;
@@ -58,6 +59,7 @@ public class HomeFragment extends Fragment {
         transactionDAO = new TransactionDAO(requireContext());
         budgetDAO = new BudgetDAO(requireContext());
 
+        tvGreeting = v.findViewById(R.id.tv_greeting);
         tvMonth = v.findViewById(R.id.tv_month);
         tvBalance = v.findViewById(R.id.tv_balance);
         tvIncome = v.findViewById(R.id.tv_month_income);
@@ -109,7 +111,8 @@ public class HomeFragment extends Fragment {
         long start = DateUtils.startOfMonth(now);
         long end = DateUtils.endOfMonth(now);
 
-        tvMonth.setText(DateUtils.monthTitle(now));
+        tvGreeting.setText("Xin chào, " + AppPrefs.getUserName(requireContext()));
+        tvMonth.setText("Tổng quan · " + DateUtils.monthTitle(now));
 
         double balance = transactionDAO.getTotalBalance();
         double income = transactionDAO.sumByRange(start, end, Transaction.TYPE_INCOME);

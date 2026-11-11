@@ -16,8 +16,154 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Cài đặt &amp; Tiện ích"
+            android:text="Cài đặt &amp; Tài khoản"
             style="@style/Text.ScreenTitle" />
+
+        <!-- Nhóm Tài khoản -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="TÀI KHOẢN CỦA BẠN"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Thông tin người dùng -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <FrameLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_icon_circle"
+                        android:backgroundTint="@color/primary">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:layout_gravity="center"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_person"
+                            app:tint="@color/white" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tv_user_name"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Sinh viên IT"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            style="@style/Text.Body" />
+
+                        <TextView
+                            android:id="@+id/tv_user_email"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="sv@finmate.vn"
+                            style="@style/Text.Caption" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View style="@style/SettingDivider" />
+
+                <!-- Đổi mật khẩu -->
+                <LinearLayout
+                    android:id="@+id/row_change_password"
+                    style="@style/SettingRow">
+
+                    <ImageView
+                        style="@style/SettingIcon"
+                        android:src="@drawable/ic_lock" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Đổi mật khẩu"
+                            style="@style/Text.Body" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Cập nhật mật khẩu bảo vệ tài khoản"
+                            style="@style/Text.Caption" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/text_faint" />
+                </LinearLayout>
+
+                <View style="@style/SettingDivider" />
+
+                <!-- Đăng xuất -->
+                <LinearLayout
+                    android:id="@+id/row_logout"
+                    style="@style/SettingRow">
+
+                    <ImageView
+                        style="@style/SettingIcon"
+                        android:backgroundTint="@color/expense_bg"
+                        android:src="@drawable/ic_logout"
+                        app:tint="@color/expense" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Đăng xuất"
+                            android:textColor="@color/expense"
+                            android:textStyle="bold"
+                            style="@style/Text.Body" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Thoát khỏi tài khoản hiện tại"
+                            style="@style/Text.Caption" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Nhóm Quản lý -->
         <TextView
@@ -335,14 +481,14 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Xóa toàn bộ dữ liệu"
+                            android:text="Xóa dữ liệu của tài khoản"
                             android:textColor="@color/expense"
                             style="@style/Text.Body" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Xóa tất cả giao dịch và ngân sách"
+                            android:text="Xóa tất cả giao dịch và ngân sách hiện tại"
                             style="@style/Text.Caption" />
                     </LinearLayout>
                 </LinearLayout>

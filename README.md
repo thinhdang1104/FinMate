@@ -5,6 +5,12 @@
 ---
 
 ## Tính năng chính
+0. **Đăng ký, Đăng nhập & Quản lý tài khoản (`LoginActivity`, `RegisterActivity`):**
+   - Đăng ký tài khoản mới (Họ tên, Email, Mật khẩu băm **SHA-256**), kiểm tra chống trùng Email.
+   - Đăng nhập và tự động ghi nhớ phiên đăng nhập (`SharedPreferences`).
+   - Hỗ trợ đa người dùng trên cùng thiết bị: dữ liệu giao dịch (`transactions`) và ngân sách (`budgets`) được phân tách riêng theo `user_id`.
+   - Hỗ trợ **Đổi mật khẩu** và **Đăng xuất** ngay trong màn hình Cài đặt.
+   - Có sẵn nút điền nhanh tài khoản Demo (`sv@finmate.vn` / `123456`) phục vụ thuyết trình đồ án.
 1. **Tổng quan tài chính (`HomeFragment`):**
    - Hiển thị Số dư hiện tại, Tổng Thu và Tổng Chi trong tháng.
    - Thanh tiến trình **Ngân sách tháng** tự động đổi màu cảnh báo: Xanh (`< 80%`), Cam (`80% – 99%`), Đỏ (`>= 100%`).
